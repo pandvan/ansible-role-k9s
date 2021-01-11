@@ -1,0 +1,32 @@
+---
+
+- name: Check if K9s binary exists.
+  stat:
+    path: "{{ k9s_bin_path }}"
+  register: k9s_check
+
+- name: Check K9s version.
+  command: "{{ k9s_bin_path }} version --short"
+  failed_when: false
+  changed_when: false
+  register: k9s_existing_version
+
+- name: Download K9s.
+  unarchive:
+    src: https://github.com/derailed/k9s/releases/download/v{{ k9s_version }}/k9s_{{ k9s_platform }}_{{ k9s_arch }}.tar.gz
+    dest: /tmp
+    remote_src: true
+    mode: 0755
+  register: k9s_download
+  when: >
+    not k9s_check.stat.exists
+    or k9s_version not in k9s_existing_version.stdout
+
+- name: Copy K9s binary into place.
+  copy:
+    src: "/tmp/k9s"
+    dest: "{{ k9s_bin_path }}"
+    mode: 0755
+    remote_src: true
+  become: true
+  when: k9s_download is changed

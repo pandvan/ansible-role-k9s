@@ -1,0 +1,33 @@
+---
+
+image: docker:stable
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+
+services:
+  - docker:stable-dind
+
+before_script:
+  - apk update &&
+    apk add --no-cache
+    python3-dev py3-pip py3-cryptography py3-wheel
+    gcc git curl build-base autoconf automake linux-headers
+    musl-dev libffi-dev openssl-dev openssh
+  - docker info
+  - python3 --version
+  - python3 -m pip install --ignore-installed distlib ansible molecule[lint,docker]
+  - ansible --version
+  - molecule --version
+
+stages:
+  - test
+
+molecule:
+  stage: test
+  script:
+    - molecule test
+  only:
+    - master
+    - develop
